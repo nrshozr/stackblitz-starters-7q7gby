@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yapısal Tabu</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #6a11cb, #2575fc);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            background: white;
+            color: #333;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            display: none;
+        }
+
+        .intro {
+            display: block;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #4caf50;
+            margin-bottom: 20px;
+        }
+
+        .intro p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            color: white;
+            background: #1e88e5;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #card {
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+
+        #word {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #forbidden-words {
+            margin-top: 10px;
+            font-size: 1rem;
+            color: #e91e63;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        #timer {
+            font-size: 1.5rem;
+            color: #ff5722;
+            margin: 20px 0;
+        }
+
+        #scoreboard {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+
+        .group-indicator {
+            margin: 20px 0;
+            padding: 10px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .group-1 {
+            background: #4caf50;
+        }
+
+        .group-2 {
+            background: #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <!-- Giriş Ekranı -->
+    <div class="container intro" id="intro">
+        <h1>Yapısal Tabu</h1>
+        <p>Eğlenceli bir kelime oyununa hazır mısın? Öncelikle kelimenin yapısını söylemeyi unutma! Gruplar verilen süre boyunca mümkün olduğunca fazla kelime bilmeye çalışacak. Yasaklı kelimelere dikkat edin ve eğlenin!</p>
+        <button id="start-game">Oyuna Başla</button>
+    </div>
+
+    <!-- Oyun Alanı -->
+    <div class="container" id="game">
+        <h1>Yapısal Tabu</h1>
+        <div class="group-indicator group-1" id="group-indicator">Sıra: Grup 1</div>
+        <div id="card">
+            <div id="word">Kelime: Hazır mısınız?</div>
+            <div id="forbidden-words">
+                Yasaklı Kelimeler: <span id="forbidden-list">...</span>
+            </div>
+        </div>
+        <div id="timer">Kalan Süre: <span id="time">120</span>s</div>
+        <div class="controls">
+            <button id="correct-btn">Doğru</button>
+            <button id="forbidden-btn">Yasaklı Kelime</button>
+        </div>
+        <div id="scoreboard">
+            <div>Grup 1 Puanı: <span id="group1-score">0</span></div>
+            <div>Grup 2 Puanı: <span id="group2-score">0</span></div>
+        </div>
+    </div>
+
+    <script>
+        const intro = document.getElementById("intro");
+        const game = document.getElementById("game");
+        const startGameButton = document.getElementById("start-game");
+
+        const groupIndicator = document.getElementById("group-indicator");
+        const wordElement = document.getElementById("word");
+        const forbiddenListElement = document.getElementById("forbidden-list");
+        const timerElement = document.getElementById("time");
+        const group1ScoreElement = document.getElementById("group1-score");
+        const group2ScoreElement = document.getElementById("group2-score");
+
+        const correctButton = document.getElementById("correct-btn");
+        const forbiddenButton = document.getElementById("forbidden-btn");
+
+        let cards = [
+            { word: "kitaplık", forbidden: ["kitap", "raflar", "okumak"] },
+            { word: "evcil", forbidden: ["hayvan", "köpek", "kedi"] },
+            { word: "gökyüzü", forbidden: ["mavi", "bulut", "uçak"] },
+            { word: "oyuncak", forbidden: ["çocuk", "oyun", "hediye"] },
+            { word: "bahçivan", forbidden: ["bahçe", "çiçek", "bitki"] },
+            { word: "sevgi", forbidden: ["aşk", "mutluluk", "duygu"] },
+            { word: "çalışkan", forbidden: ["ders", "çalışmak", "öğrenci"] },
+            { word: "arkadaşlık", forbidden: ["dost", "arkadaş", "bağ"] },
+            { word: "mutluluk", forbidden: ["sevinç", "huzur", "neşe"] },
+            { word: "para", forbidden: ["dolar", "satın alma", "kağıt"] },
+            { word: "kafatası", forbidden: ["kemik", "beyin", "saç"] },
+            { word: "futbol", forbidden: ["top", "kale", "maç"] },
+            { word: "gözlük", forbidden: ["güneş", "görmek", "takmak"] },
+            { word: "emzik", forbidden: ["bebek", "ağlamak", "emmek"] },
+            { word: "çanta", forbidden: ["kapkaçcı", "cüzdan", "kadın"] },
+            { word: "göktaşı", forbidden: ["uzay", "meteor", "alev topu"] },
+            { word: "gözyaşı", forbidden: ["ağlamak", "göz", "su"] },
+            { word: "elma", forbidden: ["yasak", "kırmızı", "yeşil"] },
+            { word: "heykel", forbidden: ["sanat", "resim", "yontmak"] },
+            { word: "sivrisinek", forbidden: ["hayvan", "uçmak", "kanat"] },
+            { word: "cetvel", forbidden: ["ölçmek", "T", "uzun"] },
+            { word: "şekerleme", forbidden: ["şeker", "tatlı", "lokum"] },
+            { word: "gelinlik", forbidden: ["gelin", "düğün", "beyaz"] },
+            { word: "ağaç", forbidden: ["dal", "yaprak", "yeşil"] },
+            { word: "zarf", forbidden: ["mektup", "yazmak", "mail"] },
+            { word: "yüzük", forbidden: ["parmak", "takı", "evlilik"] },
+            { word: "ödev", forbidden: ["ders", "okul", "öğretmen"] },
+            { word: "sonbahar", forbidden: ["mevsim","yaprak", "hüzün"] },
+            { word: "örgü", forbidden: ["kazak", "yün", "nine"] },
+            { word: "hastalık", forbidden: ["doktor", "hemşire", "hastane"] },
+            { word: "araba", forbidden: ["ulaşım", "gaz", "hız"] },
+            { word: "balıkçı", forbidden: ["olta", "balık", "deniz"] },
+        ];
+
+        let currentCardIndex = 0;
+        let currentGroup = 1;
+        let group1Score = 0;
+        let group2Score = 0;
+        let timer;
+        let groupTime = 120;
+
+        startGameButton.addEventListener("click", startGame);
+
+        function startGame() {
+            intro.style.display = "none";
+            game.style.display = "block";
+            currentCardIndex = 0;
+            group1Score = 0;
+            group2Score = 0;
+            currentGroup = 1;
+            updateGroupIndicator();
+            updateScores();
+            loadCard();
+            startTimer();
+        }
+
+        function loadCard() {
+            const card = cards[currentCardIndex];
+            wordElement.textContent = `Kelime: ${card.word}`;
+            forbiddenListElement.textContent = card.forbidden.join(", ");
+            currentCardIndex = (currentCardIndex + 1) % cards.length;
+        }
+
+        function updateScores() {
+            group1ScoreElement.textContent = group1Score;
+            group2ScoreElement.textContent = group2Score;
+        }
+
+        function updateGroupIndicator() {
+            groupIndicator.textContent = `Sıra: Grup ${currentGroup}`;
+            groupIndicator.className = currentGroup === 1 ? "group-indicator group-1" : "group-indicator group-2";
+        }
+
+        function startTimer() {
+            groupTime = 60;
+            timerElement.textContent = groupTime;
+
+            clearInterval(timer);
+            timer = setInterval(() => {
+                groupTime--;
+                timerElement.textContent = groupTime;
+
+                if (groupTime <= 0) {
+                    clearInterval(timer);
+                    switchGroup();
+                }
+            }, 1000);
+        }
+
+        function switchGroup() {
+            currentGroup = currentGroup === 1 ? 2 : 1;
+            updateGroupIndicator();
+            startTimer();
+        }
+
+        correctButton.addEventListener("click", () => {
+            if (currentGroup === 1) group1Score += 5;
+            else group2Score += 5;
+            updateScores();
+            loadCard();
+        });
+
+        forbiddenButton.addEventListener("click", () => {
+            if (currentGroup === 1) group1Score -= 5;
+            else group2Score -= 5;
+            updateScores();
+            loadCard();
+        });
+    </script>
+</body>
+</html>
